@@ -9,6 +9,7 @@
 
 # Precompiled Headers
 *.gch
+**/*.gch
 *.pch
 
 # Compiled Dynamic libraries
@@ -30,3 +31,6 @@
 *.exe
 *.out
 *.app
+
+# log 
+*.log
