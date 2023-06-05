@@ -15,7 +15,6 @@
  *    3 - internal error, fork failed
  *
  */
-#include "socket.c"
 #include <unistd.h>
 #include <sys/param.h>
 #include <rpc/types.h>
@@ -23,6 +22,7 @@
 #include <strings.h>
 #include <time.h>
 #include <signal.h>
+#include "socket.c"
 
 /* values */
 volatile int timerexpired = 0;
@@ -49,6 +49,8 @@ int mypipe[2];
 char host[MAXHOSTNAMELEN];
 #define REQUEST_SIZE 2048
 char request[REQUEST_SIZE];
+extern int Socket_1(const char *host, int clientPort);
+
 
 static const struct option long_options[] = {
     {"force", no_argument, &force, 1},
@@ -323,7 +325,7 @@ static int bench(void) {
     FILE *f;
 
     /* check avaibility of target server */
-    i = Socket(proxyhost == NULL ? host : proxyhost, proxyport);
+    i = Socket_1(proxyhost == NULL ? host : proxyhost, proxyport);
     if (i < 0) {
         fprintf(stderr, "\nConnect to server failed. Aborting benchmark.\n");
         return 1;
@@ -432,7 +434,7 @@ nexttry:
             }
             return;
         }
-        s = Socket(host, port);
+        s = Socket_1(host, port);
         if (s < 0) {
             failed++;
             continue;
