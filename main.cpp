@@ -31,8 +31,8 @@ extern void add_fd(int epoll_fd, int fd, bool one_shot);
 extern void remove_fd(int epoll_fd, int fd);
 extern void modify_fd(int epoll_fd, int fd, int ev);
 
-// 定时器初始化
-client_data *users_timer; // 客户端数据
+// 定时器初始化 客户端数据
+client_data *users_timer = new client_data[MAX_FD];
 Utils utils;
 
 // 主要的通信逻辑
@@ -75,8 +75,8 @@ void net_communication() {
     // 定时器初始化
     int pipe_fd[2]; // 内核进程间通信
 
-    int ret = socketpair(PF_UNIX, SOCK_STREAM, 0, pipe_fd);
-    assert(ret != -1);
+    eno = socketpair(PF_UNIX, SOCK_STREAM, 0, pipe_fd);
+    assert(eno != -1);
     set_nonblocking(pipe_fd[1]);
     add_fd(epoll_fd, pipe_fd[0], false);
 
@@ -91,16 +91,17 @@ void net_communication() {
     Utils::u_epollfd = epoll_fd;
 
 
-    auto init_timer = [&](int connfd, struct sockaddr_in client_address) {
-        users[connfd].init(connfd, client_address);
+    auto init_timer = [&](int connfd, struct sockaddr_in caddr) {
+        users[connfd].init(connfd, caddr);
 
         // 初始化client_data数据
         // 创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
-        users_timer[connfd].addr = client_address;
+        users_timer[connfd].addr = caddr;
         users_timer[connfd].sockfd = connfd;
-        util_timer *timer = new util_timer;
+        auto timer = new util_timer;
         timer->user_data = &users_timer[connfd];
         timer->cb_func = cb_func;
+
         time_t cur = time(NULL);
         timer->expire = cur + 3 * TIMESLOT;
         users_timer[connfd].timer = timer;
@@ -176,7 +177,7 @@ void net_communication() {
                 // 加入定时器
                 init_timer(cfd, caddr);
                 // 新的客户数据初始化, 放入数组
-                users[cfd].init(cfd, caddr);
+                users[cfd].init(cfd, caddr); // 初始化 http_conn 对象
             } else if (events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
                 //  Error, 关闭连接
                 printf("关闭连接...\n");
@@ -219,7 +220,10 @@ void net_communication() {
     }
     close(epoll_fd);
     close(lfd);
+    close(pipe_fd[1]);
+    close(pipe_fd[0]);
     delete[] users;
+    delete[] users_timer;
     delete pool;
 }
 

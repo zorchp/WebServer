@@ -1,4 +1,5 @@
 CXX=g++
+# CXX=clang++-12
 
 LOG=./log/log.cpp
 LOCKER=./locker/locker.hpp

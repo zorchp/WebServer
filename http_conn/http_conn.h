@@ -94,8 +94,8 @@ private:
     int bytes_to_send;         // 将要发送的字节数
     int bytes_sent;            // 已发送字节数
 
-    // timer
-    int timer_flg;
+    // // timer
+    // int timer_flg;
 };
 
 #endif // !HTTPCONN_H

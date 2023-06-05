@@ -125,6 +125,9 @@ void sort_timer_lst::add_timer(util_timer* timer, util_timer* lst_head) {
 
 // 工具类
 
+int* Utils::u_pipefd = 0; // 管道数组
+int Utils::u_epollfd = 0;
+
 void Utils::init(int timeslot) { m_TIMESLOT = timeslot; }
 
 // 信号处理函数
@@ -157,8 +160,6 @@ void Utils::show_error(int connfd, const char* info) {
     close(connfd);
 }
 
-int* Utils::u_pipefd = 0;
-int Utils::u_epollfd = 0;
 
 class Utils;
 void cb_func(client_data* user_data) {

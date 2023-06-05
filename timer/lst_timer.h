@@ -2,6 +2,7 @@
 #define LST_TIMER_H
 #include <ctime>
 #include <cstdio>
+#include <errno.h>
 #include <arpa/inet.h>
 #include <signal.h>
 #include <sys/epoll.h>
