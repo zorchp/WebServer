@@ -62,6 +62,7 @@ void modify_fd(int epoll_fd, int fd, int ev) {
     epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
 }
 
+
 void http_conn::init(int sockfd, const sockaddr_in& addr) {
     m_sockfd = sockfd;
     m_addr = addr;
@@ -285,7 +286,17 @@ HTTP_CODE http_conn::parse_request_line(char* text) {
         m_url = strchr(m_url, '/'); // 定位第一个出现的字符位置
     }
 
+    // 'https://'
+    if (strncasecmp(m_url, "https://", 8) == 0) {
+        m_url += 8;
+        m_url = strchr(m_url, '/'); // 定位第一个出现的字符位置
+    }
+
     if (!m_url || m_url[0] != '/') return BAD_REQUEST;
+
+    // 当url为/时，显示默认页面
+    if (strlen(m_url) == 1) strcat(m_url, "index.html");
+
     m_check_state = CHECK_STATE_HEADER;
     return NO_REQUEST; // 不完整, 还需要继续解析
 }
@@ -365,14 +376,14 @@ HTTP_CODE http_conn::do_request() {
     char buf[FILENAME_LEN];
     strcat(getcwd(buf, FILENAME_LEN), m_real_file);
     strcpy(m_real_file, buf);
-    // printf("%s\n", m_real_file);
+    // printf("%s\n", m_real_file); // assets
     // printf("%s\n", buf);
     if (stat(m_real_file, &m_file_stat) < 0) return NO_RESOURCE;
 
     // 权限
     if (!(m_file_stat.st_mode & S_IROTH)) return FORBIDDEN_REQUEST;
 
-    // 资源存在情况
+    // 资源
     if (S_ISDIR(m_file_stat.st_mode)) return BAD_REQUEST;
 
 

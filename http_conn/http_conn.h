@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/mman.h>
@@ -92,6 +93,9 @@ private:
     CHECK_STATE m_check_state; // 主状态机当前所处的状态
     int bytes_to_send;         // 将要发送的字节数
     int bytes_sent;            // 已发送字节数
+
+    // timer
+    int timer_flg;
 };
 
 #endif // !HTTPCONN_H

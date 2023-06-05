@@ -3,9 +3,11 @@ CXX=g++
 LOG=./log/log.cpp
 LOCKER=./locker/locker.hpp
 THREADPOOL=./threadPool/threadPool.hpp
+TIMER=./timer/lst_timer.cpp
 HTTP=./http_conn/http_conn.cpp
 
-SRC=$(LOG) $(LOCKER) $(THREADPOOL) $(HTTP) main.cpp
+# SRC=$(LOG) $(LOCKER) $(THREADPOOL) $(HTTP) $(TIMER) main.cpp
+SRC=$(LOCKER) $(THREADPOOL) $(TIMER) $(HTTP) main.cpp
 OBJ=server.out
 
 
