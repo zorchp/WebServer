@@ -54,7 +54,8 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
         throw std::exception();
 
     for (int i{}; i < num; ++i) {
-        printf("creating %d th thread\n", i);
+        // printf("creating %d th thread\n", i);
+
         // worker is static func, using this
         int eno = pthread_create(m_threads + i, NULL, worker, this);
         if (0 != eno) {

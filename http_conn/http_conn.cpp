@@ -116,7 +116,6 @@ bool http_conn::write() { // in main.cpp
     int tmp{};
     if (bytes_to_send == 0) {
         //
-        // printf("空??\n");
         modify_fd(m_epollfd, m_sockfd, EPOLLIN);
         status_init();
         return true;
@@ -220,7 +219,7 @@ HTTP_CODE http_conn::process_read() {
         // 解析到了一行数据, 或者解析到了请求体(完整的数据)
         text = get_line();
         m_start_line = m_checked_idx;
-        printf("got 1 http line :\n%s\n", text);
+        // printf("got 1 http line :\n%s\n", text);
 
         // 开始解析
         switch (m_check_state) {
@@ -238,7 +237,7 @@ HTTP_CODE http_conn::process_read() {
                 if (ans == BAD_REQUEST) {
                     return BAD_REQUEST;
                 } else if (ans == GET_REQUEST) {
-                    printf("get-header\n");
+                    // printf("get-header\n");
                     return do_request();
                 }
                 break;
@@ -247,7 +246,7 @@ HTTP_CODE http_conn::process_read() {
                 //
                 ans = parse_content(text);
                 if (ans == GET_REQUEST) {
-                    printf("get-body\n");
+                    // printf("get-body\n");
                     return do_request();
                 }
                 printf("body-un completed\n");
@@ -324,8 +323,9 @@ HTTP_CODE http_conn::parse_headers(char* text) {
         text += 5;
         text += strspn(text, " \t");
         m_hostname = text;
-    } else
-        printf("unknown header %s\n", text);
+    } else {
+        // printf("unknown header %s\n", text);
+    }
 
     return NO_REQUEST;
 }
@@ -479,7 +479,7 @@ bool http_conn::process_write(HTTP_CODE ret) {
                 m_iv_cnt = 2;
                 // 发送字节
                 bytes_to_send = m_write_idx + m_file_stat.st_size;
-                printf("data:\n%s\n", m_write_buf);
+                // printf("data:\n%s\n", m_write_buf);
                 return true;
             } else {
                 const char* ok_string = "<html><body></body></html>";

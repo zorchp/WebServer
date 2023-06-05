@@ -180,7 +180,7 @@ void net_communication() {
                 users[cfd].init(cfd, caddr); // 初始化 http_conn 对象
             } else if (events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
                 //  Error, 关闭连接
-                printf("关闭连接...\n");
+                // printf("关闭连接...\n");
                 del_timer(users_timer[sockfd].timer, sockfd); // 删除定时器
                 users[sockfd].close_conn();
             } else if ((sockfd == pipe_fd[0]) && (events[i].events & EPOLLIN)) {
@@ -189,7 +189,7 @@ void net_communication() {
                 // LOG_ERROR("%s", "dealclientdata failure");
             } else if (events[i].events & EPOLLIN) { // 收客户端数据
                 // 读事件发生, 一次性读取全部数据(主线程)
-                printf("reading...\n");
+                // printf("reading...\n");
                 auto timer = users_timer[sockfd].timer;
                 if (users[sockfd].read()) {
                     // pool->append(&users[sockfd]);
@@ -200,7 +200,7 @@ void net_communication() {
                     users[sockfd].close_conn();
                 }
             } else if (events[i].events & EPOLLOUT) { // 写事件
-                printf("writing... \n");
+                // printf("writing... \n");
                 auto timer = users_timer[sockfd].timer;
                 // 发回客户端数据
                 if (users[sockfd].write()) { // 一次性写完全部数据

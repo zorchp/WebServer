@@ -80,7 +80,7 @@ void sort_timer_lst::del_timer(util_timer* timer) {
 void sort_timer_lst::tick() { // 心搏函数
     // 处理链表上到期的任务
     if (!head) return;
-    printf("time tick\n");
+    // printf("time tick\n");
     time_t cur = time(NULL); // 使用绝对时间, 直接和系统时间比较
     auto tmp = head;
     // 从头结点开始依次处理每个定时器(结点)
