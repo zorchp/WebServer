@@ -75,10 +75,13 @@ void net_communication() {
     // 定时器初始化
     int pipe_fd[2]; // 内核进程间通信
 
+    // 创建套接字
     eno = socketpair(PF_UNIX, SOCK_STREAM, 0, pipe_fd);
     assert(eno != -1);
     set_nonblocking(pipe_fd[1]);
     add_fd(epoll_fd, pipe_fd[0], false);
+    // 如果 0(读取端)有事件发生, 说明定时器到时间了, 触发了事件
+    // SIGALRM 或者 SIGTERM, 通过 epoll 捕获之后进行下一步处理
 
     utils.addsig(SIGPIPE, SIG_IGN);
     utils.addsig(SIGALRM, utils.sig_handler, false);
@@ -115,7 +118,7 @@ void net_communication() {
         timer->expire = cur + 3 * TIMESLOT;
         utils.m_timer_lst.adjust_timer(timer);
 
-        // LOG_INFO("%s", "adjust timer once");
+        LOG_INFO("%s", "adjust timer once");
     };
 
     auto del_timer = [&](util_timer *timer, int sockfd) {
@@ -124,28 +127,24 @@ void net_communication() {
             utils.m_timer_lst.del_timer(timer);
         }
 
-        // LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
+        LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
     };
     auto dealwithsignal = [&](bool &timeout, bool &stop_server) {
         int ret = 0;
         int sig;
         char signals[1024];
         ret = recv(pipe_fd[0], signals, sizeof(signals), 0);
-        if (ret == -1) {
-            return false;
-        } else if (ret == 0) {
+        if (ret == -1 || ret == 0) {
             return false;
         } else {
             for (int i = 0; i < ret; ++i) {
                 switch (signals[i]) {
-                    case SIGALRM: {
+                    case SIGALRM:
                         timeout = true;
                         break;
-                    }
-                    case SIGTERM: {
+                    case SIGTERM:
                         stop_server = true;
                         break;
-                    }
                 }
             }
         }
@@ -191,7 +190,6 @@ void net_communication() {
                 // printf("reading...\n");
                 auto timer = users_timer[sockfd].timer;
                 if (users[sockfd].read()) {
-                    // pool->append(&users[sockfd]);
                     pool->append(users + sockfd);
                     if (timer) adjust_timer(timer);
                 } else {
@@ -237,7 +235,7 @@ void addsig(int sig, void(handler)(int)) {
 int main(int argc, char *argv[]) {
     //
     // 信号处理: 忽略 EPIPE
-    addsig(SIGPIPE, SIG_IGN); // 终止进程
+    addsig(SIGPIPE, SIG_IGN);
     Log::get_instance()->init("./server.log", 2000, 800000, 0);
     net_communication();
 
