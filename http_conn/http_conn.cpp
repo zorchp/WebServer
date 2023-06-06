@@ -107,6 +107,7 @@ bool http_conn::read() {
             return false;
         }
         m_read_idx += total;
+        LOG_INFO("read data : %s", m_read_buf);
         // printf("read data:\n%s\n", m_read_buf);
     }
     return true;

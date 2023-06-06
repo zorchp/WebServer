@@ -7,14 +7,6 @@
 #include <unistd.h>
 #include "../locker/locker.hpp"
 
-// RAII
-class lock_guard {
-    locker mtx;
-
-public:
-    lock_guard(locker mtx_) : mtx(mtx_) { mtx.lock(); }
-    ~lock_guard() { mtx.unlock(); }
-};
 
 template <typename T>
 class block_queue {

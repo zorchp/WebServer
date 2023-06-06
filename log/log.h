@@ -4,6 +4,8 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include "block_queue.hpp"
+#include <cstdlib>
+#include <cstring>
 
 class Log {
 public:
@@ -18,7 +20,7 @@ public:
         return NULL;
     }
     // 可选择的参数有日志文件、日志缓冲区大小、最大行数以及最长日志条队列
-    bool init(const char *file_name, int close_log, int log_buf_size = 8192,
+    bool init(const char *file_name, int log_buf_size = 8192,
               int split_lines = 5000000, int max_queue_size = 0);
 
     void write_log(int level, const char *format, ...);
@@ -32,9 +34,8 @@ private:
         char *single_log;
         // 从阻塞队列中取出一个日志string，写入文件
         while (m_log_queue->pop(single_log)) {
-            m_mutex.lock();
+            lock_guard lk(m_mutex);
             fputs(single_log, m_fp);
-            m_mutex.unlock();
         }
         return NULL;
     }
@@ -54,31 +55,16 @@ private:
     int m_close_log; // 关闭日志
 };
 
-#define LOG_DEBUG(format, ...)                                    \
-    if (0 == m_close_log) {                                       \
-        Log::get_instance()->write_log(0, format, ##__VA_ARGS__); \
-        Log::get_instance()->flush();                             \
-    }
-#define LOG_INFO(format, ...)                                     \
-    if (0 == m_close_log) {                                       \
-        Log::get_instance()->write_log(1, format, ##__VA_ARGS__); \
-        Log::get_instance()->flush();                             \
-    }
-#define LOG_WARN(format, ...)                                     \
-    if (0 == m_close_log) {                                       \
-        Log::get_instance()->write_log(2, format, ##__VA_ARGS__); \
-        Log::get_instance()->flush();                             \
-    }
-#define LOG_ERROR(format, ...)                                    \
-    if (0 == m_close_log) {                                       \
-        Log::get_instance()->write_log(3, format, ##__VA_ARGS__); \
-        Log::get_instance()->flush();                             \
-    }
+#define LOG_DEBUG(format, ...) \
+    Log::get_instance()->write_log(0, format, ##__VA_ARGS__);
 
+#define LOG_INFO(format, ...) \
+    Log::get_instance()->write_log(1, format, ##__VA_ARGS__);
 
-// 日志注册宏
-#define ERR(x) perror(#x), exit(-1)
-#define LOG(x) printf(#x)
+#define LOG_WARN(format, ...) \
+    Log::get_instance()->write_log(2, format, ##__VA_ARGS__);
 
+#define LOG_ERROR(format, ...) \
+    Log::get_instance()->write_log(3, format, ##__VA_ARGS__);
 
 #endif

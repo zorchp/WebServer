@@ -24,6 +24,16 @@ private:
     pthread_mutex_t m_mutex;
 };
 
+
+// RAII
+class lock_guard {
+    locker mtx;
+
+public:
+    lock_guard(locker mtx_) : mtx(mtx_) { mtx.lock(); }
+    ~lock_guard() { mtx.unlock(); }
+};
+
 // 条件变量
 class cond {
 public:

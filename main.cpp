@@ -60,10 +60,10 @@ void net_communication() {
     addr.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0
     addr.sin_port = htons(PORT);
     int eno = bind(lfd, (struct sockaddr *)&addr, sizeof(addr));
-    if (eno == -1) ERR(bind);
+    if (eno == -1) LOG_ERROR("bind error");
 
     eno = listen(lfd, 10);
-    if (eno == -1) ERR(listen);
+    if (eno == -1) LOG_ERROR("listen error");
 
     utils.init(TIMESLOT); // init here
     // epoll init
@@ -156,7 +156,7 @@ void net_communication() {
     while (1) {
         bool timeout{}, is_stop{};
         int num = epoll_wait(epoll_fd, events, MAX_EVENT_NUM, -1);
-        if (num < 0 && errno != EINTR) ERR(epoll);
+        if (num < 0 && errno != EINTR) LOG_ERROR("epoll error");
 
 
         // 遍历事件
@@ -185,8 +185,7 @@ void net_communication() {
                 users[sockfd].close_conn();
             } else if ((sockfd == pipe_fd[0]) && (events[i].events & EPOLLIN)) {
                 bool flag = dealwithsignal(timeout, is_stop);
-                if (false == flag) ERR(dealclientdata);
-                // LOG_ERROR("%s", "dealclientdata failure");
+                if (false == flag) LOG_ERROR("%s", "dealclientdata failure");
             } else if (events[i].events & EPOLLIN) { // 收客户端数据
                 // 读事件发生, 一次性读取全部数据(主线程)
                 // printf("reading...\n");
@@ -214,7 +213,7 @@ void net_communication() {
         if (timeout) { // 处理超时事件
             utils.timer_handler();
 
-            // LOG_INFO("%s", "timer tick");
+            LOG_INFO("%s", "timer tick");
             timeout = false;
         }
     }
@@ -239,7 +238,7 @@ int main(int argc, char *argv[]) {
     //
     // 信号处理: 忽略 EPIPE
     addsig(SIGPIPE, SIG_IGN); // 终止进程
-
+    Log::get_instance()->init("./server.log", 2000, 800000, 0);
     net_communication();
 
     return 0;

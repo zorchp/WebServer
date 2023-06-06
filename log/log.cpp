@@ -14,8 +14,8 @@ Log::~Log() {
     }
 }
 // 异步需要设置阻塞队列的长度，同步不需要设置
-bool Log::init(const char *file_name, int close_log, int log_buf_size,
-               int split_lines, int max_queue_size) {
+bool Log::init(const char *file_name, int log_buf_size, int split_lines,
+               int max_queue_size) {
     // 如果设置了max_queue_size,则设置为异步
     if (max_queue_size >= 1) {
         m_is_async = true;
@@ -25,18 +25,16 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size,
         pthread_create(&tid, NULL, flush_log_thread, NULL);
     }
 
-    m_close_log = close_log;
     m_log_buf_size = log_buf_size;
     m_buf = new char[m_log_buf_size];
     memset(m_buf, '\0', m_log_buf_size);
     m_split_lines = split_lines;
 
     time_t t = time(NULL);
-    struct tm *sys_tm = localtime(&t);
-    struct tm my_tm = *sys_tm;
+    struct tm my_tm = *localtime(&t);
 
 
-    const char *p = strrchr(file_name, '/');
+    const char *p = strrchr(file_name, '/'); // 右边是否存在`/`
     char log_full_name[1024] = {0};
 
     if (p == NULL) {
@@ -53,19 +51,15 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size,
     m_today = my_tm.tm_mday;
 
     m_fp = fopen(log_full_name, "a");
-    if (m_fp == NULL) {
-        return false;
-    }
-
-    return true;
+    return NULL != m_fp;
 }
 
 void Log::write_log(int level, const char *format, ...) {
     struct timeval now = {0, 0};
     gettimeofday(&now, NULL);
     time_t t = now.tv_sec;
-    struct tm *sys_tm = localtime(&t);
-    struct tm my_tm = *sys_tm;
+    struct tm my_tm = *localtime(&t);
+
     char s[16] = {0};
     switch (level) {
         case 0:
@@ -78,11 +72,10 @@ void Log::write_log(int level, const char *format, ...) {
             strcpy(s, "[warn]:");
             break;
         case 3:
-            strcpy(s, "[erro]:");
+            strcpy(s, "[error]:");
             break;
         default:
             strcpy(s, "[info]:");
-            break;
     }
     // 写入一个log，对m_count++, m_split_lines最大行数
     m_mutex.lock();
@@ -133,17 +126,16 @@ void Log::write_log(int level, const char *format, ...) {
     if (m_is_async && !m_log_queue->full()) {
         m_log_queue->push(log_str);
     } else {
-        m_mutex.lock();
+        lock_guard lk(m_mutex);
         fputs(log_str, m_fp);
-        m_mutex.unlock();
     }
 
     va_end(valst);
+    flush();
 }
 
 void Log::flush(void) {
-    m_mutex.lock();
+    lock_guard lk(m_mutex);
     // 强制刷新写入流缓冲区
     fflush(m_fp);
-    m_mutex.unlock();
 }
