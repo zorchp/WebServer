@@ -81,9 +81,8 @@ void Log::write_log(int level, const char *format, ...) {
     m_mutex.lock();
     m_count++;
 
-    if (m_today != my_tm.tm_mday ||
-        m_count % m_split_lines == 0) // everyday log
-    {
+    // 关闭并重新创建一个文件
+    if (m_today != my_tm.tm_mday || m_count % m_split_lines == 0) {
         char new_log[1024] = {0};
         fflush(m_fp);
         fclose(m_fp);
