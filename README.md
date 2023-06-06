@@ -31,3 +31,4 @@ WebServer using C++11
 3. 优化 HTTP 报文解析, 增加多版本支持: HTTP/1.0, HTTP/1.1(default)
 4. webbench 优化
 5. 模块化, main 函数优化(提取读写逻辑)
+6. 视频传输在 Safari 上的支持(需要回传特定头的报文)
