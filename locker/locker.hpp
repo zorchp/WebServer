@@ -1,7 +1,6 @@
 #ifndef LOCKER_H
 #define LOCKER_H
 
-#include "../base/non_copyable.h"
 #include <pthread.h>
 #include <exception>
 #include <semaphore.h>
@@ -67,7 +66,7 @@ private:
 class sem {
 public:
     sem() {
-        if (sem_init(&m_sem, 0, 0) != 0) //
+        if (sem_init(&m_sem, 0, 0) != 0) // 默认条件变量
             throw std::exception();
     }
     sem(int num) {

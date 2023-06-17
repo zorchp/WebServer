@@ -1,16 +1,14 @@
 #ifndef THREADPOOL
 #define THREADPOOL
 #include <exception>
-#include <pthread.h>
 #include <list> // 工作队列
 #include <cstdio>
-#include <semaphore.h>
 #include "../locker/locker.hpp"
 
 template <typename T>
 class ThreadPool {
 public:
-    ThreadPool(int num = 8, int max_req = 10000);
+    ThreadPool(int num = 8, int max_req = 100000);
     ~ThreadPool();
 
     bool append(T* req);
@@ -63,7 +61,7 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
             throw std::exception();
         }
 
-        eno = pthread_detach(m_threads[i]);
+        eno = pthread_detach(m_threads[i]); // 线程分离
         if (0 != eno) {
             delete[] m_threads;
             throw std::exception();
@@ -118,7 +116,7 @@ void ThreadPool<T>::run() {
             continue;
         }
 
-        // 执行任务
+        // 执行任务, 需要实现 process 方法
         req->process();
     }
 }
