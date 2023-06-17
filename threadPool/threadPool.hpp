@@ -104,9 +104,9 @@ template <typename T>
 void ThreadPool<T>::run() {
     while (!is_stop) {
         m_queuestat.wait(); // 获取, -1
-        m_queuelocker.lock();
+        // m_queuelocker.lock();
         if (m_workqueue.empty()) {
-            m_queuelocker.unlock();
+            // m_queuelocker.unlock();
             continue;
         }
 
@@ -115,7 +115,7 @@ void ThreadPool<T>::run() {
         T* req = m_workqueue.try_pop();
         // T* req = m_workqueue.front();
         // m_workqueue.pop_front();
-        m_queuelocker.unlock();
+        // m_queuelocker.unlock();
 
         if (!req) { // 空, 继续获取
             LOG_INFO("http req empty\n");
