@@ -14,30 +14,28 @@
 #include "timer/lst_timer.h"
 
 
-// 最大文件描述符个数
+// the number of maximum file descriptor
 const int MAX_FD = 65535;
-// 最大监听事件数
+// the number of maximum listening event
 const int MAX_EVENT_NUM = 10000;
-// 最小超时单位
+// time to wait
 const int TIMESLOT = 5;
-// 端口
 const int PORT = 9006;
 
 
-// epoll 的相关文件描述符操作
-
+// epoll operator
 extern void set_nonblocking(int fd);
 extern void add_fd(int epoll_fd, int fd, bool one_shot);
 extern void remove_fd(int epoll_fd, int fd);
 extern void modify_fd(int epoll_fd, int fd, int ev);
 
-// 定时器初始化 客户端数据
+// init client data and timer
 client_data *users_timer = new client_data[MAX_FD];
 Utils utils;
 
-// 主要的通信逻辑
+// main communication logic
 void net_communication() {
-    // 创建线程池:
+    // create thread pool
     ThreadPool<http_conn> *pool{};
 
     try {
@@ -46,7 +44,7 @@ void net_communication() {
         exit(-1);
     }
 
-    // 保存客户端信息
+    // save client info
     http_conn *users = new http_conn[MAX_FD];
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -60,10 +58,12 @@ void net_communication() {
     addr.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0
     addr.sin_port = htons(PORT);
     int eno = bind(lfd, (struct sockaddr *)&addr, sizeof(addr));
-    if (eno == -1) LOG_ERROR("bind error");
+    if (eno == -1)
+        LOG_ERROR("bind error");
 
     eno = listen(lfd, 10);
-    if (eno == -1) LOG_ERROR("listen error");
+    if (eno == -1)
+        LOG_ERROR("listen error");
 
     utils.init(TIMESLOT); // init here
     // epoll init
@@ -72,10 +72,10 @@ void net_communication() {
 
     add_fd(epoll_fd, lfd, false);
     http_conn::m_epollfd = epoll_fd;
-    // 定时器初始化
-    int pipe_fd[2]; // 内核进程间通信
+    // init timer: IPC with pipe
+    int pipe_fd[2];
 
-    // 创建套接字
+    // create
     eno = socketpair(PF_UNIX, SOCK_STREAM, 0, pipe_fd);
     assert(eno != -1);
     set_nonblocking(pipe_fd[1]);
@@ -155,7 +155,8 @@ void net_communication() {
     while (1) {
         bool timeout{}, is_stop{};
         int num = epoll_wait(epoll_fd, events, MAX_EVENT_NUM, -1);
-        if (num < 0 && errno != EINTR) LOG_ERROR("epoll error");
+        if (num < 0 && errno != EINTR)
+            LOG_ERROR("epoll error");
 
 
         // 遍历事件
@@ -169,7 +170,7 @@ void net_communication() {
 
                 if (http_conn::m_user_count >= MAX_FD) {
                     // 连接满, 内部正忙
-                    printf("connect full\n");
+                    LOG_INFO("%s", "full conection");
                     close(cfd);
                     continue;
                 }
@@ -179,29 +180,32 @@ void net_communication() {
                 users[cfd].init(cfd, caddr); // 初始化 http_conn 对象
             } else if (events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)) {
                 //  Error, 关闭连接
-                // printf("关闭连接...\n");
+                LOG_INFO("close connection");
                 del_timer(users_timer[sockfd].timer, sockfd); // 删除定时器
                 users[sockfd].close_conn();
             } else if ((sockfd == pipe_fd[0]) && (events[i].events & EPOLLIN)) {
                 bool flag = dealwithsignal(timeout, is_stop);
-                if (false == flag) LOG_ERROR("%s", "dealclientdata failure");
+                if (false == flag)
+                    LOG_ERROR("%s", "dealclientdata failure");
             } else if (events[i].events & EPOLLIN) { // 收客户端数据
                 // 读事件发生, 一次性读取全部数据(主线程)
-                // printf("reading...\n");
+                LOG_INFO("reading");
                 auto timer = users_timer[sockfd].timer;
                 if (users[sockfd].read()) {
                     pool->append(users + sockfd);
-                    if (timer) adjust_timer(timer);
+                    if (timer)
+                        adjust_timer(timer);
                 } else {
                     del_timer(timer, sockfd);
                     users[sockfd].close_conn();
                 }
             } else if (events[i].events & EPOLLOUT) { // 写事件
-                // printf("writing... \n");
+                LOG_INFO("writing...");
                 auto timer = users_timer[sockfd].timer;
                 // 发回客户端数据
                 if (users[sockfd].write()) { // 一次性写完全部数据
-                    if (timer) adjust_timer(timer);
+                    if (timer)
+                        adjust_timer(timer);
                 } else { // 删除定时器, 关闭连接
                     del_timer(timer, sockfd);
                     users[sockfd].close_conn();
@@ -236,7 +240,7 @@ int main(int argc, char *argv[]) {
     //
     // 信号处理: 忽略 EPIPE
     addsig(SIGPIPE, SIG_IGN);
-    Log::get_instance()->init("./server.log", 2000, 800000, 0);
+    Log::get_instance()->init("./server.log", 2000, 800000, 0, false);
     net_communication();
 
     return 0;

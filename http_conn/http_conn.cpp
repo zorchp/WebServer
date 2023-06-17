@@ -42,7 +42,8 @@ void add_fd(int epoll_fd, int fd, bool one_shot) {
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLRDHUP;
 
-    if (one_shot) event.events |= EPOLLONESHOT;
+    if (one_shot)
+        event.events |= EPOLLONESHOT;
 
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
     set_nonblocking(fd);
@@ -58,7 +59,7 @@ void remove_fd(int epoll_fd, int fd) {
 void modify_fd(int epoll_fd, int fd, int ev) {
     epoll_event event;
     event.data.fd = fd;
-    event.events = ev | EPOLLONESHOT | EPOLLRDHUP | EPOLLET; // 边缘触发
+    event.events = ev | EPOLLONESHOT | EPOLLRDHUP; //| EPOLLET; // 边缘触发
     epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
 }
 
@@ -108,7 +109,6 @@ bool http_conn::read() {
         }
         m_read_idx += total;
         LOG_INFO("read data : %s", m_read_buf);
-        // printf("read data:\n%s\n", m_read_buf);
     }
     return true;
 }
@@ -180,8 +180,8 @@ void http_conn::process() {
 
     // 生成响应
     modify_fd(m_epollfd, m_sockfd, EPOLLOUT);
-    if (!process_write(read_ans)) close_conn();
-    // printf("written...\n");
+    if (!process_write(read_ans))
+        close_conn();
 }
 
 
@@ -220,7 +220,6 @@ HTTP_CODE http_conn::process_read() {
         // 解析到了一行数据, 或者解析到了请求体(完整的数据)
         text = get_line();
         m_start_line = m_checked_idx;
-        // printf("got 1 http line :\n%s\n", text);
 
         // 开始解析
         switch (m_check_state) {
@@ -238,7 +237,6 @@ HTTP_CODE http_conn::process_read() {
                 if (ans == BAD_REQUEST) {
                     return BAD_REQUEST;
                 } else if (ans == GET_REQUEST) {
-                    // printf("get-header\n");
                     return do_request();
                 }
                 break;
@@ -247,10 +245,9 @@ HTTP_CODE http_conn::process_read() {
                 //
                 ans = parse_content(text);
                 if (ans == GET_REQUEST) {
-                    // printf("get-body\n");
                     return do_request();
                 }
-                printf("body-un completed\n");
+                LOG_ERROR("%s", "not completed");
                 line_status = LINE_OPEN;
                 break;
             }
@@ -276,10 +273,12 @@ HTTP_CODE http_conn::parse_request_line(char* text) {
         return BAD_REQUEST;
 
     m_http_version = strpbrk(m_url, " \t");
-    if (!m_http_version) return BAD_REQUEST;
+    if (!m_http_version)
+        return BAD_REQUEST;
     *m_http_version++ = '\0';
 
-    if (strcasecmp(m_http_version, "HTTP/1.1") != 0) return BAD_REQUEST;
+    if (strcasecmp(m_http_version, "HTTP/1.1") != 0)
+        return BAD_REQUEST;
     // 'http://'
     if (strncasecmp(m_url, "http://", 7) == 0) {
         m_url += 7;
@@ -292,10 +291,12 @@ HTTP_CODE http_conn::parse_request_line(char* text) {
         m_url = strchr(m_url, '/'); // 定位第一个出现的字符位置
     }
 
-    if (!m_url || m_url[0] != '/') return BAD_REQUEST;
+    if (!m_url || m_url[0] != '/')
+        return BAD_REQUEST;
 
     // 当url为/时，显示默认页面
-    if (strlen(m_url) == 1) strcat(m_url, "index.html");
+    if (strlen(m_url) == 1)
+        strcat(m_url, "index.html");
 
     m_check_state = CHECK_STATE_HEADER;
     return NO_REQUEST; // 不完整, 还需要继续解析
@@ -325,7 +326,7 @@ HTTP_CODE http_conn::parse_headers(char* text) {
         text += strspn(text, " \t");
         m_hostname = text;
     } else {
-        // printf("unknown header %s\n", text);
+        LOG_INFO("unknown header %s\n", text);
     }
 
     return NO_REQUEST;
@@ -377,15 +378,16 @@ HTTP_CODE http_conn::do_request() {
     char buf[FILENAME_LEN];
     strcat(getcwd(buf, FILENAME_LEN), m_real_file);
     strcpy(m_real_file, buf);
-    // printf("%s\n", m_real_file); // assets
-    // printf("%s\n", buf);
-    if (stat(m_real_file, &m_file_stat) < 0) return NO_RESOURCE;
+    if (stat(m_real_file, &m_file_stat) < 0)
+        return NO_RESOURCE;
 
     // 权限
-    if (!(m_file_stat.st_mode & S_IROTH)) return FORBIDDEN_REQUEST;
+    if (!(m_file_stat.st_mode & S_IROTH))
+        return FORBIDDEN_REQUEST;
 
     // 资源
-    if (S_ISDIR(m_file_stat.st_mode)) return BAD_REQUEST;
+    if (S_ISDIR(m_file_stat.st_mode))
+        return BAD_REQUEST;
 
 
     int fd = open(m_real_file, O_RDONLY);
@@ -399,13 +401,15 @@ HTTP_CODE http_conn::do_request() {
 
 // 发回, 生成响应, 具体操作
 bool http_conn::add_response(const char* format, ...) {
-    if (m_write_idx >= WRITE_BUF_SIZE) return false;
+    if (m_write_idx >= WRITE_BUF_SIZE)
+        return false;
 
     va_list arg_list;
     va_start(arg_list, format);
     int len = vsnprintf(m_write_buf + m_write_idx,
                         WRITE_BUF_SIZE - 1 - m_write_idx, format, arg_list);
-    if (len >= (WRITE_BUF_SIZE - 1 - m_write_idx)) return false;
+    if (len >= (WRITE_BUF_SIZE - 1 - m_write_idx))
+        return false;
 
     m_write_idx += len;
     va_end(arg_list);
@@ -429,7 +433,9 @@ bool http_conn::add_linger() {
                         (is_linger == true) ? "keep-alive" : "close");
 }
 
-bool http_conn::add_blank_line() { return add_response("%s", "\r\n"); }
+bool http_conn::add_blank_line() {
+    return add_response("%s", "\r\n");
+}
 
 bool http_conn::add_content(const char* content) {
     return add_response("%s", content);
@@ -480,7 +486,6 @@ bool http_conn::process_write(HTTP_CODE ret) {
                 m_iv_cnt = 2;
                 // 发送字节
                 bytes_to_send = m_write_idx + m_file_stat.st_size;
-                // printf("data:\n%s\n", m_write_buf);
                 return true;
             } else {
                 const char* ok_string = "<html><body></body></html>";

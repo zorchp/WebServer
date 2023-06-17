@@ -1,9 +1,12 @@
 #ifndef THREADPOOL
 #define THREADPOOL
 #include <exception>
-#include <list> // 工作队列
 #include <cstdio>
+#include <list>
+#include "../log/log.h"
 #include "../locker/locker.hpp"
+// #include "../base/threadsafe_queue_smart_ptr.h"
+#include "../base/threadsafe_queue.h"
 
 template <typename T>
 class ThreadPool {
@@ -22,7 +25,8 @@ private: //
     // 最大允许等待处理的请求数
     int m_max_requests;
     // 请求队列: 任务
-    std::list<T*> m_workqueue;
+    queue_ts<T*> m_workqueue;
+    // std::list<T*> m_workqueue;
     // 锁
     locker m_queuelocker;
     // 信号量: 判断是否有任务需要处理
@@ -44,7 +48,8 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
       m_queuelocker(),
       m_queuestat(),
       is_stop(false) {
-    if (num <= 0 || max_req <= 0) throw std::exception();
+    if (num <= 0 || max_req <= 0)
+        throw std::exception();
 
     // 创建
     m_threads = new pthread_t[m_thread_num];
@@ -52,8 +57,6 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
         throw std::exception();
 
     for (int i{}; i < num; ++i) {
-        // printf("creating %d th thread\n", i);
-
         // worker is static func, using this
         int eno = pthread_create(m_threads + i, NULL, worker, this);
         if (0 != eno) {
@@ -83,7 +86,8 @@ bool ThreadPool<T>::append(T* req) {
         return false;
     }
 
-    m_workqueue.push_back(req);
+    // m_workqueue.push_back(req); // http_conn*
+    m_workqueue.push(req); // http_conn*
     m_queuelocker.unlock();
     m_queuestat.post(); // +1, 表示执行结束
     return true;
@@ -96,7 +100,6 @@ void* ThreadPool<T>::worker(void* arg) {
     return NULL;
 }
 
-
 template <typename T>
 void ThreadPool<T>::run() {
     while (!is_stop) {
@@ -108,11 +111,14 @@ void ThreadPool<T>::run() {
         }
 
         // 有数据, 获取队头任务
-        T* req = m_workqueue.front();
-        m_workqueue.pop_front();
+        // T* req = *m_workqueue.try_pop().get();
+        T* req = m_workqueue.try_pop();
+        // T* req = m_workqueue.front();
+        // m_workqueue.pop_front();
         m_queuelocker.unlock();
 
         if (!req) { // 空, 继续获取
+            LOG_INFO("http req empty\n");
             continue;
         }
 

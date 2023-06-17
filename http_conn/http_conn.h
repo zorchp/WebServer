@@ -29,8 +29,10 @@ public:
     static const int FILENAME_LEN = 256;    // 文件名长度支持
 
     // http
-    http_conn() {}
-    ~http_conn() {}
+    http_conn() {
+    }
+    ~http_conn() {
+    }
     void init(int sockfd, const sockaddr_in& addr); // 初始化新接收的连接
     void process();    // 处理客户端请求(以及响应)
     void close_conn(); // 关闭连接
@@ -48,8 +50,10 @@ private:
     HTTP_CODE parse_content(char* text);      // 解析 HTTP 请求体
     LINE_STATUS parse_line(); // 解析一行请求, 从状态机, 判断依据 '\r\n'
     // 这并不是独立 的一行(是所有数据的起始指针)
-    char* get_line() { return m_read_buf + m_start_line; } // 获取一行
-    HTTP_CODE do_request();                                // 具体的处理
+    char* get_line() {
+        return m_read_buf + m_start_line;
+    }                       // 获取一行
+    HTTP_CODE do_request(); // 具体的处理
     // 写入(发回客户端)
     bool process_write(HTTP_CODE); // 解析 HTTP 请求
     void unmap();
