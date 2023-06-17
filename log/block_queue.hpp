@@ -18,7 +18,8 @@ class block_queue {
 
 public:
     block_queue(int max_size = 1000) {
-        if (max_size <= 0) exit(-1);
+        if (max_size <= 0)
+            exit(-1);
 
         m_max_size = max_size;
         m_array = new T[max_size];
@@ -26,7 +27,8 @@ public:
     }
     ~block_queue() {
         lock_guard lk(m_mutex);
-        if (m_array) delete[] m_array;
+        if (m_array)
+            delete[] m_array;
     }
 
     void clear() {

@@ -20,7 +20,8 @@ struct client_data {
 
 class util_timer {
 public:
-    util_timer() : prev(NULL), next(NULL) {}
+    util_timer() : prev(NULL), next(NULL) {
+    }
 
 public:
     time_t expire;                  // 任务超时时间, 绝对时间
@@ -32,7 +33,8 @@ public:
 
 class sort_timer_lst { // 升序链表
 public:
-    sort_timer_lst() : head(NULL), tail(NULL) {}
+    sort_timer_lst() : head(NULL), tail(NULL) {
+    }
     ~sort_timer_lst();
     void add_timer(util_timer *);
     void adjust_timer(util_timer *);
@@ -49,8 +51,10 @@ private:
 
 class Utils {
 public:
-    Utils() {}
-    ~Utils() {}
+    Utils() {
+    }
+    ~Utils() {
+    }
 
     void init(int timeslot);
 

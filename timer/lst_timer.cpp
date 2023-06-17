@@ -11,7 +11,8 @@ sort_timer_lst::~sort_timer_lst() { // 双向链表的析构操作
 }
 
 void sort_timer_lst::add_timer(util_timer* timer) { // 将目标定时器添加到链表中
-    if (!timer) return;
+    if (!timer)
+        return;
     if (!head) {
         head = tail = timer;
         return;
@@ -32,9 +33,11 @@ void sort_timer_lst::add_timer(util_timer* timer) { // 将目标定时器添加�
 
 void sort_timer_lst::adjust_timer(util_timer* timer) {
     // 调整, 考虑时间延长情况, 后移当前节点
-    if (!timer) return;
+    if (!timer)
+        return;
     auto tmp = timer->next;
-    if (!tmp || timer->expire < tmp->expire) return;
+    if (!tmp || timer->expire < tmp->expire)
+        return;
     // 若为头结点, 取出->重新插入
     if (timer == head) {
         head = head->next;
@@ -49,7 +52,8 @@ void sort_timer_lst::adjust_timer(util_timer* timer) {
 }
 
 void sort_timer_lst::del_timer(util_timer* timer) {
-    if (!timer) return;
+    if (!timer)
+        return;
     if (timer == head && tail == timer) {
         // 仅有一个定时器
         delete timer;
@@ -79,18 +83,21 @@ void sort_timer_lst::del_timer(util_timer* timer) {
 
 void sort_timer_lst::tick() { // 心搏函数
     // 处理链表上到期的任务
-    if (!head) return;
+    if (!head)
+        return;
     // printf("time tick\n");
     time_t cur = time(NULL); // 使用绝对时间, 直接和系统时间比较
     auto tmp = head;
     // 从头结点开始依次处理每个定时器(结点)
     // 直到遇到一个尚未到期的定时器
     while (tmp) {
-        if (cur < tmp->expire) break; // 还未到超时时间
+        if (cur < tmp->expire)
+            break; // 还未到超时时间
         // callback 执行定时任务
         tmp->cb_func(tmp->user_data);
         head = tmp->next;
-        if (head) head->prev = NULL;
+        if (head)
+            head->prev = NULL;
         delete tmp; // 删除完成的定时器
         tmp = head;
     }
@@ -128,7 +135,9 @@ void sort_timer_lst::add_timer(util_timer* timer, util_timer* lst_head) {
 int* Utils::u_pipefd = 0; // 管道数组
 int Utils::u_epollfd = 0;
 
-void Utils::init(int timeslot) { m_TIMESLOT = timeslot; }
+void Utils::init(int timeslot) {
+    m_TIMESLOT = timeslot;
+}
 
 // 信号处理函数
 void Utils::sig_handler(int sig) {
@@ -144,7 +153,8 @@ void Utils::addsig(int sig, void(handler)(int), bool restart) {
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
     sa.sa_handler = handler;
-    if (restart) sa.sa_flags |= SA_RESTART;
+    if (restart)
+        sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
     assert(sigaction(sig, &sa, NULL) != -1);
 }
