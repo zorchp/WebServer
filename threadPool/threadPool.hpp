@@ -17,24 +17,22 @@ public:
     void run();
 
 private: //
-    // 线程数量
     int m_thread_num;
-    // 线程池数组
+    // array to store threads
     pthread_t* m_threads;
-    // 最大允许等待处理的请求数
+    // Maximum number of requests waiting to be processed
     int m_max_requests;
-    // 请求队列: 任务
+    // task queue
     queue<T*> m_workqueue;
-    // std::list<T*> m_workqueue;
-    // 锁
+    // lock
     locker m_queuelocker;
-    // 信号量: 判断是否有任务需要处理
+    // sem, check task process or not
     sem m_queuestat;
-    // 是否结束线程
+    // check all threads over
     bool is_stop;
 
 private:
-    // 静态 工作函数: 子线程
+    // woker sub-thread
     static void* worker(void*);
 };
 
@@ -50,9 +48,9 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
     if (num <= 0 || max_req <= 0)
         throw std::exception();
 
-    // 创建
+    // init
     m_threads = new pthread_t[m_thread_num];
-    if (!m_threads) // TODO: new 异常处理
+    if (!m_threads) // TODO: new handler
         throw std::exception();
 
     for (int i{}; i < num; ++i) {
@@ -63,7 +61,7 @@ ThreadPool<T>::ThreadPool(int num, int max_req)
             throw std::exception();
         }
 
-        eno = pthread_detach(m_threads[i]); // 线程分离
+        eno = pthread_detach(m_threads[i]);
         if (0 != eno) {
             delete[] m_threads;
             throw std::exception();
@@ -87,7 +85,7 @@ bool ThreadPool<T>::append(T* req) {
 
     m_workqueue.push(req); // http_conn*
     m_queuelocker.unlock();
-    m_queuestat.post(); // +1, 表示执行结束
+    m_queuestat.post(); // +1, finish
     return true;
 }
 
@@ -101,23 +99,23 @@ void* ThreadPool<T>::worker(void* arg) {
 template <typename T>
 void ThreadPool<T>::run() {
     while (!is_stop) {
-        m_queuestat.wait(); // 获取, -1
+        m_queuestat.wait(); // get, -1
         m_queuelocker.lock();
         if (m_workqueue.empty()) {
             m_queuelocker.unlock();
             continue;
         }
 
-        // 有数据, 获取队头任务
+        // get data from queue front
         T* req = *m_workqueue.pop().get();
         m_queuelocker.unlock();
 
-        if (!req) { // 空, 继续获取
+        if (!req) { // empty, get continually
             LOG_INFO("http req empty\n");
             continue;
         }
 
-        // 执行任务, 需要实现 process 方法
+        // main task
         req->process();
     }
 }
