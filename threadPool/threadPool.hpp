@@ -2,11 +2,10 @@
 #define THREADPOOL
 #include <exception>
 #include <cstdio>
-#include <list>
 #include "../log/log.h"
 #include "../locker/locker.hpp"
-// #include "../base/threadsafe_queue_smart_ptr.h"
-#include "../base/threadsafe_queue.h"
+#include "../base/queue.h"
+// #include "../base/threadsafe_queue.h"
 
 template <typename T>
 class ThreadPool {
@@ -25,7 +24,7 @@ private: //
     // 最大允许等待处理的请求数
     int m_max_requests;
     // 请求队列: 任务
-    queue_ts<T*> m_workqueue;
+    queue<T*> m_workqueue;
     // std::list<T*> m_workqueue;
     // 锁
     locker m_queuelocker;
@@ -86,7 +85,6 @@ bool ThreadPool<T>::append(T* req) {
         return false;
     }
 
-    // m_workqueue.push_back(req); // http_conn*
     m_workqueue.push(req); // http_conn*
     m_queuelocker.unlock();
     m_queuestat.post(); // +1, 表示执行结束
@@ -104,18 +102,15 @@ template <typename T>
 void ThreadPool<T>::run() {
     while (!is_stop) {
         m_queuestat.wait(); // 获取, -1
-        // m_queuelocker.lock();
+        m_queuelocker.lock();
         if (m_workqueue.empty()) {
-            // m_queuelocker.unlock();
+            m_queuelocker.unlock();
             continue;
         }
 
         // 有数据, 获取队头任务
-        // T* req = *m_workqueue.try_pop().get();
-        T* req = m_workqueue.try_pop();
-        // T* req = m_workqueue.front();
-        // m_workqueue.pop_front();
-        // m_queuelocker.unlock();
+        T* req = *m_workqueue.pop().get();
+        m_queuelocker.unlock();
 
         if (!req) { // 空, 继续获取
             LOG_INFO("http req empty\n");

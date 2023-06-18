@@ -34,6 +34,7 @@ debug:
 
 
 clean:
-	rm *.out
+	-rm *.out
+	# -rm *.log
 
 

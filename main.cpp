@@ -192,7 +192,7 @@ void net_communication() {
                 LOG_INFO("reading");
                 auto timer = users_timer[sockfd].timer;
                 if (users[sockfd].read()) {
-                    pool->append(users + sockfd);
+                    pool->append(users + sockfd); // to threadpool
                     if (timer)
                         adjust_timer(timer);
                 } else {
